@@ -673,8 +673,39 @@ $("cal-next").onclick = () => { calMonth = shiftMonth(calMonth, 1); renderArchiv
 function showView(name) {
   document.body.dataset.view = name;
   for (const v of ["home", "play", "archive"]) $(`view-${v}`).hidden = v !== name;
-  // The back arrow and some menu items only belong on certain pages.
-  document.querySelectorAll("[data-show]").forEach((el) => (el.hidden = !el.dataset.show.split(" ").includes(name)));
+  // The back arrow and some menu items only belong on certain pages; the reset helpers also only
+  // exist when the site runs locally, so real players can never wipe their progress by accident.
+  document.querySelectorAll("[data-show]").forEach((el) => {
+    el.hidden = !el.dataset.show.split(" ").includes(name) || ("localOnly" in el.dataset && !IS_LOCAL);
+  });
+}
+const IS_LOCAL = ["localhost", "127.0.0.1"].includes(location.hostname);
+
+// ---------- local testing: reset ----------
+let resetAction = null;
+function askReset(title, text, action) {
+  $("reset-title").textContent = title;
+  $("reset-text").textContent = text;
+  resetAction = action;
+  $("dlg-reset").showModal();
+}
+$("reset-confirm").onclick = () => {
+  $("dlg-reset").close();
+  resetAction?.();
+};
+function resetGame() {
+  askReset(`Reset game #${gameNo}?`, "This clears your guesses for this game so you can play it again from the start.", () => {
+    try { localStorage.removeItem(gameKey(gameNo)); } catch {}
+    openGame(gameNo);
+  });
+}
+function resetAllGames() {
+  askReset("Reset all games?", "This clears every game's guesses in this browser, and your stats with them.", () => {
+    try {
+      Object.keys(localStorage).filter((k) => k.startsWith("alludo:game:")).forEach((k) => localStorage.removeItem(k));
+    } catch {}
+    route();
+  });
 }
 function route() {
   const path = location.pathname.replace(/\/+$/, "") || "/";
@@ -805,6 +836,8 @@ document.addEventListener("click", (e) => {
     closest: showClosest,
     stats: showStats,
     settings: () => $("dlg-settings").showModal(),
+    reset: () => { if (!busy && IS_LOCAL) resetGame(); },
+    resetall: () => { if (!busy && IS_LOCAL) resetAllGames(); },
   })[action]?.();
 });
 $("giveup-confirm").onclick = () => { $("dlg-giveup").close(); exclusive(giveUp); };

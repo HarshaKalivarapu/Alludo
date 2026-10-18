@@ -133,6 +133,8 @@ https://claude.ai/artifact/17umdknpCtwETt1uoW5HUg
 - Site pages: `/` home (today's card, stats), `/play` and `/play/<n>`, `/archive` (month calendar
   with solved / gave up / in progress / not played). Progress is per browser (localStorage).
 - Local testing with past games: `npx wrangler pages dev --port 8788 --binding LAUNCH_DATE=2026-10-16`.
+  On localhost only, the menu adds "Reset this game" (in a game) and "Reset all games" (home and
+  calendar); they never appear on the live site.
 
 ## Launch-eve status (2026-10-18, evening)
 
