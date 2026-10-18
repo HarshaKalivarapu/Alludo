@@ -149,6 +149,10 @@ https://claude.ai/artifact/17umdknpCtwETt1uoW5HUg
   og.png with the full wordmark. Both built by `pipeline/brand_assets.py` (fonts in data/raw/fonts).
 - The daily job schedules the next batch itself when fewer than 35 days are left (pool in KV
   `state:pool`), and both workflows skip cleanly when setup is missing.
+- The Actions cache of in-progress LLM work is an AES-encrypted archive (passphrase: the
+  CLOUDFLARE_API_TOKEN secret), because its folder names are answers and fork pull requests can
+  read a public repo's caches. Git history was checked: no answers were ever committed. This makes
+  the repo safe to make public (unlimited free Actions minutes).
 
 ## Status (2026-10-18)
 

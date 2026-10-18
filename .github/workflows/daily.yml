@@ -84,17 +84,27 @@ jobs:
           ls -l data/emb
 
       # Intermediate LLM files (brainstorms, chunk scores) so a word started yesterday resumes.
-      # Finished keys live in KV, so losing this cache only costs a few requests.
+      # Finished keys live in KV, so losing this cache only costs a few requests. The folder names
+      # are the answers, so the cache holds only an encrypted archive: pull requests from forks can
+      # read a public repo's caches but never get the secret that unlocks it.
       - name: Restore LLM work
         if: steps.setup.outputs.ready == 'true'
         uses: actions/cache/restore@v4
         with:
-          path: data/llm/prod
-          key: llm-prod-${{ github.run_id }}
-          restore-keys: llm-prod-
+          path: llm-prod.enc
+          key: llm-prod-enc-${{ github.run_id }}
+          restore-keys: llm-prod-enc-
 
-      - run: mkdir -p data/llm/prod
+      - name: Unlock LLM work
         if: steps.setup.outputs.ready == 'true'
+        env:
+          CACHE_PASS: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          mkdir -p data/llm/prod
+          if [ -f llm-prod.enc ]; then
+            openssl enc -d -aes-256-cbc -pbkdf2 -pass env:CACHE_PASS -in llm-prod.enc | tar -xz -C data/llm \
+              || echo "Couldn't open the saved work (the token may have changed); starting fresh."
+          fi
 
       - uses: actions/setup-node@v4
         if: steps.setup.outputs.ready == 'true'
@@ -131,9 +141,15 @@ jobs:
           --max-requests "${{ inputs.max_requests || '40' }}" --max-minutes 40
 
       # Saved even when the run fails or times out, so finished requests are never repeated.
+      - name: Lock LLM work
+        if: always() && steps.setup.outputs.ready == 'true'
+        env:
+          CACHE_PASS: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: tar -czf - -C data/llm prod | openssl enc -aes-256-cbc -pbkdf2 -pass env:CACHE_PASS -out llm-prod.enc
+
       - name: Save LLM work
         if: always() && steps.setup.outputs.ready == 'true'
         uses: actions/cache/save@v4
         with:
-          path: data/llm/prod
-          key: llm-prod-${{ github.run_id }}
+          path: llm-prod.enc
+          key: llm-prod-enc-${{ github.run_id }}
