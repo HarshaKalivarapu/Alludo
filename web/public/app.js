@@ -294,9 +294,12 @@ async function bigGuess(entry, next) {
   const shadow = "0 14px 30px rgba(0,0,0,0.32)";
 
   // 1. Lift in place over the input box.
+  const submitted = els.input.value;
   await fly.animate([{ transform: resting, boxShadow: "0 0 0 rgba(0,0,0,0)" }, { transform: lifted, boxShadow: shadow }],
     { duration: LIFT, easing: "cubic-bezier(.2,.8,.25,1)", fill: "forwards" }).finished;
-  els.input.value = ""; // hidden under the card, so no one sees it clear
+  // Hidden under the card, so no one sees it clear. If the player already started typing their
+  // next word, keep it: they can type during the whole sequence, and Enter works once it ends.
+  if (els.input.value === submitted) els.input.value = "";
 
   // 2. Reveal: the rank counts down and the bar fills, while the highlight moves to the card.
   const accent = getComputedStyle(document.documentElement).getPropertyValue("--b-accent").trim();
@@ -642,6 +645,10 @@ function renderArchive() {
   $("cal-title").textContent = new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-US", { timeZone: "UTC", month: "long", year: "numeric" });
   $("cal-prev").disabled = calMonth <= first;
   $("cal-next").disabled = calMonth >= last;
+  const note = $("cal-note");
+  note.hidden = today.game >= 1;
+  note.textContent = `Past games will show up here once the first one goes live on ${prettyDate(dateOfGame(1), true)}.`;
+  $("random-game").hidden = today.game < 2;
   const cells = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => `<div class="cal-dow">${d}</div>`);
   const startDay = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
   const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
@@ -676,7 +683,7 @@ function route() {
   if (path !== "/" && path !== "/archive") history.replaceState(null, "", "/");
   game = null;
   setBoard("start", motion() ? 450 : 0);
-  if (path === "/archive" && today.game >= 1) {
+  if (path === "/archive") {
     showView("archive");
     renderArchive();
   } else {
@@ -774,7 +781,8 @@ els.menuBtn.onclick = (e) => {
 document.addEventListener("click", (e) => { if (!els.menu.contains(e.target)) closeMenu(); });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(); });
 
-// Guesses and hints run one at a time, so a big-guess moment is never interrupted.
+// Guesses and hints run one at a time, so a big-guess moment is never interrupted: typing stays
+// open, but Enter does nothing until the sequence (including the wave) has finished.
 async function exclusive(task) {
   if (busy) return;
   busy = true;
