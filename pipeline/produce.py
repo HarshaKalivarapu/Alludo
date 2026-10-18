@@ -213,9 +213,13 @@ def main():
     if any(m.shape[0] != len(ranker.vocab) for m, _ in ranker.models.values()):
         sys.exit("embedding caches don't match data/vocab.json: rebuild them (and the embeddings release)")
 
+    # A game whose LLM key is already in KV is done, even if its LLM files live on another machine
+    # (a local run vs. the Actions cache): redoing it would only spend quota.
+    published = lambda e: str(e["game"]) in manifest and not manifest[str(e["game"])].get("fallback")
     todo = [
         e for e in games
-        if today <= day(e) <= today + timedelta(days=args.horizon) and not frozen(e) and not progress(e["word"])[0]
+        if today <= day(e) <= today + timedelta(days=args.horizon)
+        and not frozen(e) and not published(e) and not progress(e["word"])[0]
     ]
     say(f"today {today}: {len(todo)} games within {args.horizon} days still need LLM work")
     if todo and args.max_requests > 0:

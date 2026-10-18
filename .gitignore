@@ -13,3 +13,5 @@ data/llm/prod/
 # Files to upload by hand as GitHub Release assets.
 release/
 *.log
+# Model test runs (data/llm/<run>/): local experiment output, not needed in the repo.
+data/llm/*/

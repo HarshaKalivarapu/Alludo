@@ -548,56 +548,156 @@ async function showClosest() {
   $("dlg-closest").showModal();
 }
 
+// state: "none" | "playing" | "won" | "gave_up"
 function statusOf(n) {
   const g = readJSON(gameKey(n), null);
-  if (!g || !g.guesses.length) return { label: "not played", cls: "" };
+  if (!g || !g.guesses.length) return { state: "none" };
   const count = g.guesses.filter((x) => !x.post && !x.hint).length;
-  if (g.status === "won") return { label: `won in ${count}`, cls: "won", won: true, onTime: g.finishedOn === dateOfGame(n), count };
-  if (g.status === "gave_up") return { label: "gave up", cls: "" };
-  return { label: "in progress", cls: "" };
-}
-
-function showPrevious() {
-  const items = [];
-  for (let n = today.game; n >= 1; n--) {
-    const s = statusOf(n);
-    const li = document.createElement("li");
-    const b = document.createElement("button");
-    b.innerHTML = `<span>#${n} · ${prettyDate(dateOfGame(n))}${n === today.game ? " (today)" : ""}</span><span class="status ${s.cls}">${s.label}</span>`;
-    b.onclick = () => { $("dlg-previous").close(); openGame(n); };
-    li.append(b);
-    items.push(li);
-  }
-  $("previous-list").replaceChildren(...items);
-  $("dlg-previous").showModal();
+  if (g.status === "won") return { state: "won", count, onTime: g.finishedOn === dateOfGame(n) };
+  return { state: g.status === "gave_up" ? "gave_up" : "playing", count };
 }
 
 function playRandom() {
-  const unplayed = [];
-  for (let n = 1; n < today.game; n++) if (statusOf(n).label === "not played") unplayed.push(n);
-  const pool = unplayed.length ? unplayed : Array.from({ length: Math.max(0, today.game - 1) }, (_, i) => i + 1);
-  if (!pool.length) return;
-  $("dlg-previous").close();
-  openGame(pool[Math.floor(Math.random() * pool.length)]);
+  const past = Array.from({ length: Math.max(0, today.game - 1) }, (_, i) => i + 1);
+  const unplayed = past.filter((n) => statusOf(n).state === "none");
+  const pool = unplayed.length ? unplayed : past;
+  if (pool.length) go(`/play/${pool[Math.floor(Math.random() * pool.length)]}`);
 }
 
-function showStats() {
+function statsCells() {
   let played = 0, won = 0, totalGuesses = 0, streak = 0;
   for (let n = 1; n <= today.game; n++) {
     const s = statusOf(n);
-    if (s.label !== "not played") played++;
-    if (s.won) { won++; totalGuesses += s.count; }
+    if (s.state !== "none") played++;
+    if (s.state === "won") { won++; totalGuesses += s.count; }
     // A streak counts daily games won on their own day. Today's game only breaks it once given up.
-    if (s.won && s.onTime) streak++;
-    else if (n !== today.game || s.label === "gave up") streak = 0;
+    if (s.state === "won" && s.onTime) streak++;
+    else if (n !== today.game || s.state === "gave_up") streak = 0;
   }
   const cells = [
     [played, "played"], [played ? Math.round((won / played) * 100) + "%" : "–", "won"],
     [streak, "current streak"], [won ? Math.round(totalGuesses / won) : "–", "avg guesses"],
   ];
-  $("stats").innerHTML = cells.map(([v, l]) => `<div><strong>${v}</strong><span>${l}</span></div>`).join("");
+  return cells.map(([v, l]) => `<div><strong>${v}</strong><span>${l}</span></div>`).join("");
+}
+function showStats() {
+  $("stats").innerHTML = statsCells();
   $("dlg-stats").showModal();
 }
+
+// ---------- home and archive ----------
+function renderHome() {
+  const card = $("today-card");
+  if (today.game < 1) {
+    card.innerHTML = `<p class="eyebrow">Coming soon</p><h2>The first word arrives at midnight Eastern</h2><p class="countdown"></p>`;
+  } else {
+    const s = statusOf(today.game);
+    const date = new Date(today.date + "T00:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC", weekday: "long", month: "long", day: "numeric" });
+    const action = { none: "Play", playing: "Continue", won: "View", gave_up: "View" }[s.state];
+    const line = {
+      none: "",
+      playing: `In progress · ${plural(s.count, "guess", "guesses")}`,
+      won: `Solved in ${plural(s.count, "guess", "guesses")}`,
+      gave_up: `Gave up after ${plural(s.count, "guess", "guesses")}`,
+    }[s.state];
+    card.innerHTML = `<p class="eyebrow">Game #${today.game}</p><h2>${date}</h2>${line ? `<p>${line}</p>` : ""}
+      <a class="btn primary" href="/play" data-link>${action}</a><p class="countdown"></p>`;
+  }
+  renderWeek();
+  updateCountdown();
+}
+
+// The past seven days as small tiles, ending today.
+function renderWeek() {
+  const tiles = [];
+  for (let n = today.game - 6; n <= today.game; n++) tiles.push(dayTile(n, dateOfGame(n), "weekday"));
+  $("week").innerHTML = tiles.join("");
+}
+
+// One calendar tile. label "weekday" shows Mon/Tue; "number" shows the game number.
+function dayTile(n, iso, label) {
+  const day = Number(iso.slice(8, 10));
+  const weekday = new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short" });
+  const caption = label === "weekday" ? weekday : `#${n}`;
+  if (n < 1 || n > today.game) return `<div class="cal-day off" aria-disabled="true">${label === "weekday" ? `<small>${weekday}</small>` : ""}${day}</div>`;
+  const s = statusOf(n);
+  const name = { none: "not played", playing: "in progress", won: "solved", gave_up: "gave up" }[s.state];
+  const dot = `<i class="dot ${s.state === "none" ? "" : s.state}"></i>`;
+  const body = label === "weekday" ? `<small>${caption}</small>${day}${dot}` : `${day}${dot}<small>${caption}</small>`;
+  return `<a class="cal-day${n === today.game ? " today" : ""}" href="/play/${n}" data-link aria-label="Game ${n}, ${prettyDate(iso)}, ${name}">${body}</a>`;
+}
+
+// The calendar shows one month at a time, from the launch month to the current month.
+let calMonth = null; // first day of the shown month, as "YYYY-MM"
+const monthKey = (iso) => iso.slice(0, 7);
+function shiftMonth(key, delta) {
+  const [y, m] = key.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
+  return d.toISOString().slice(0, 7);
+}
+function renderArchive() {
+  const first = monthKey(dateOfGame(1)), last = monthKey(today.date || dateOfGame(1));
+  calMonth = calMonth && calMonth >= first && calMonth <= last ? calMonth : last;
+  const [y, m] = calMonth.split("-").map(Number);
+  $("cal-title").textContent = new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-US", { timeZone: "UTC", month: "long", year: "numeric" });
+  $("cal-prev").disabled = calMonth <= first;
+  $("cal-next").disabled = calMonth >= last;
+  const cells = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => `<div class="cal-dow">${d}</div>`);
+  const startDay = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
+  const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  for (let i = 0; i < startDay; i++) cells.push(`<div class="cal-day blank" aria-hidden="true"></div>`);
+  const launch = Date.parse(dateOfGame(1) + "T00:00:00Z");
+  for (let d = 1; d <= days; d++) {
+    const iso = `${calMonth}-${String(d).padStart(2, "0")}`;
+    const n = Math.round((Date.parse(iso + "T00:00:00Z") - launch) / 86_400_000) + 1;
+    cells.push(dayTile(n, iso, "number"));
+  }
+  $("cal-grid").innerHTML = cells.join("");
+}
+$("cal-prev").onclick = () => { calMonth = shiftMonth(calMonth, -1); renderArchive(); };
+$("cal-next").onclick = () => { calMonth = shiftMonth(calMonth, 1); renderArchive(); };
+
+// ---------- pages ----------
+// "/" home, "/play" today's game, "/play/12" game 12, "/archive" the calendar.
+function showView(name) {
+  document.body.dataset.view = name;
+  for (const v of ["home", "play", "archive"]) $(`view-${v}`).hidden = v !== name;
+}
+function route() {
+  const path = location.pathname.replace(/\/+$/, "") || "/";
+  const play = path.match(/^\/play(?:\/(\d+))?$/);
+  if (play && today.game >= 1) {
+    const n = play[1] ? Number(play[1]) : today.game;
+    if (n >= 1 && n <= today.game) {
+      showView("play");
+      return openGame(n);
+    }
+  }
+  if (path !== "/" && path !== "/archive") history.replaceState(null, "", "/");
+  game = null;
+  setBoard("start", motion() ? 450 : 0);
+  if (path === "/archive" && today.game >= 1) {
+    showView("archive");
+    renderArchive();
+  } else {
+    showView("home");
+    renderHome();
+  }
+  scrollTo(0, 0);
+}
+function go(path) {
+  if (busy) return; // never interrupt a big-guess moment
+  if (path !== location.pathname) history.pushState(null, "", path);
+  route();
+}
+addEventListener("popstate", () => { if (!busy) route(); });
+document.addEventListener("click", (e) => {
+  const link = e.target.closest("a[data-link]");
+  if (!link || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+  e.preventDefault();
+  closeMenu();
+  go(link.getAttribute("href"));
+});
 
 function shareText() {
   const entries = counted();
@@ -636,14 +736,18 @@ function updateCountdown() {
       .formatToParts(new Date()).map((p) => [p.type, p.value]),
   );
   const left = 24 * 60 - (Number(parts.hour) * 60 + Number(parts.minute));
-  els.nextGame.textContent = `Next word in ${Math.floor(left / 60)}h ${left % 60}m (midnight Eastern).`;
+  const text = `Next word in ${Math.floor(left / 60)}h ${left % 60}m (midnight Eastern).`;
+  els.nextGame.textContent = text;
+  document.querySelectorAll(".today-card .countdown").forEach((el) => (el.textContent = text));
 }
 
 // ---------- settings ----------
+// Home and the archive use the starting board; a game uses its own stage.
+const currentBoard = () => (document.body.dataset.view === "play" ? boardStage : "start");
 function applyThemeSetting() {
   if (settings.theme === "system") delete document.documentElement.dataset.theme;
   else document.documentElement.dataset.theme = settings.theme;
-  setBoard(boardStage);
+  setBoard(currentBoard());
 }
 function bindSettings() {
   for (const name of ["hints", "sort", "theme"]) {
@@ -653,12 +757,12 @@ function bindSettings() {
         settings[name] = input.value;
         writeJSON(SETTINGS_KEY, settings);
         applyThemeSetting();
-        render();
+        if (game) render();
       };
     });
   }
 }
-darkScheme.addEventListener("change", () => { if (settings.theme === "system") setBoard(boardStage); });
+darkScheme.addEventListener("change", () => { if (settings.theme === "system") setBoard(currentBoard()); });
 
 // ---------- menu and controls ----------
 function closeMenu() { els.menu.hidden = true; els.menuBtn.setAttribute("aria-expanded", "false"); }
@@ -685,7 +789,6 @@ document.addEventListener("click", (e) => {
     hint: () => exclusive(getHint),
     giveup: () => (game.status === "playing" ? $("dlg-giveup").showModal() : showMessage("note", "This game is already over.")),
     closest: showClosest,
-    previous: () => { if (!busy) showPrevious(); },
     stats: showStats,
     settings: () => $("dlg-settings").showModal(),
   })[action]?.();
@@ -704,12 +807,10 @@ function openGame(n) {
   game = loadGame(n);
   lastWord = game.guesses.at(-1)?.word ?? null;
   boardStage = stageOf(counted());
-  setBoard(boardStage);
+  setBoard(boardStage, motion() ? 450 : 0);
   els.shareNote.textContent = "";
-  const url = new URL(location.href);
-  if (n === today.game) url.searchParams.delete("g"); else url.searchParams.set("g", n);
-  history.replaceState(null, "", url);
   render();
+  scrollTo(0, 0);
   els.input.focus();
 }
 
@@ -717,12 +818,17 @@ async function start() {
   applyThemeSetting();
   bindSettings();
   const res = await api("today");
-  if (res.error) { els.gameLine.textContent = "Couldn't load today's game. Refresh to try again."; return; }
+  if (res.error) {
+    showView("home");
+    $("today-card").innerHTML = `<h2>Couldn't load today's game</h2><p>Refresh the page to try again.</p>`;
+    return;
+  }
   today = res;
-  const requested = Number(new URL(location.href).searchParams.get("g"));
-  const n = Number.isInteger(requested) && requested >= 1 && requested <= today.game ? requested : today.game;
+  // Old links used ?g=12; send them to the new address.
+  const legacy = Number(new URL(location.href).searchParams.get("g"));
+  if (Number.isInteger(legacy) && legacy >= 1) history.replaceState(null, "", `/play/${legacy}`);
   if (!readJSON("alludo:seen-help", false)) { writeJSON("alludo:seen-help", true); $("dlg-how").showModal(); }
-  openGame(n);
+  route();
   setInterval(updateCountdown, 30_000);
 }
 

@@ -61,9 +61,10 @@ button { font: inherit; color: inherit; }
 .top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; color: var(--b-head); }
 /* Wordmark: spaced capitals over a cold-warm-close bar, with ripple arcs rising from the final O
    (drawn by app.js once the font has loaded, so they sit on the letter's real center). */
-.logo {
-  grid-column: 2; margin: 0; padding-top: 10px; display: inline-grid; justify-items: center; gap: 8px;
-  font-family: "Unbounded", var(--font-display); font-weight: 700; font-size: 24px; line-height: 1;
+.logo { grid-column: 2; margin: 0; padding-top: 10px; font-size: 24px; }
+.logo a {
+  display: inline-grid; justify-items: center; gap: 8px; color: inherit; text-decoration: none;
+  font-family: "Unbounded", var(--font-display); font-weight: 700; line-height: 1;
   letter-spacing: 0.26em; white-space: nowrap;
 }
 /* Letter spacing also trails the last letter; this keeps the word optically centered. */
@@ -91,8 +92,56 @@ button { font: inherit; color: inherit; }
   background: var(--b-surface); color: var(--b-ink); border: 1px solid var(--b-line); border-radius: 12px;
   padding: 6px; display: grid; box-shadow: 0 10px 30px rgb(0 0 0 / 0.25);
 }
-.menu button { text-align: left; background: none; border: 0; padding: 10px 12px; border-radius: 8px; cursor: pointer; }
-.menu button:hover, .menu button:focus-visible { background: var(--b-bg); }
+.menu button, .menu a {
+  text-align: left; background: none; border: 0; padding: 10px 12px; border-radius: 8px; cursor: pointer;
+  color: inherit; text-decoration: none; font-size: 17px;
+}
+.menu button:hover, .menu button:focus-visible, .menu a:hover, .menu a:focus-visible { background: var(--b-bg); }
+/* Hints, giving up and the closest words only make sense inside a game. */
+body:not([data-view="play"]) .menu .play-only { display: none; }
+
+.view { display: grid; gap: 12px; }
+
+/* Home: one compact card for today, a week strip, and a button to the calendar. */
+.home { gap: 16px; padding-top: 12px; }
+.today-card {
+  background: var(--b-surface); color: var(--b-ink); border: 1px solid var(--b-line); border-radius: 16px;
+  padding: 18px; display: grid; gap: 6px; justify-items: center; text-align: center;
+}
+.today-card .eyebrow { margin: 0; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--b-muted); }
+.today-card h2 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 24px; line-height: 1.15; }
+.today-card p { margin: 0; color: var(--b-muted); font-size: 15px; }
+.today-card .btn { margin-top: 6px; min-width: 160px; font-size: 18px; padding: 11px 22px; }
+.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.week .cal-day small { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+.btn.wide { justify-self: center; text-decoration: none; text-align: center; }
+.home-note { margin: 0; text-align: center; color: var(--b-head-muted); font-size: 13px; }
+
+/* Archive calendar */
+.archive { gap: 14px; }
+.cal-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; color: var(--b-head); }
+.cal-head h2 { margin: 0; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: 24px; }
+.cal-head .icon-btn { font-size: 22px; line-height: 1; }
+.cal-head .icon-btn:disabled { opacity: 0.35; cursor: default; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.cal-dow { text-align: center; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--b-head-muted); padding-bottom: 2px; }
+.cal-day {
+  aspect-ratio: 1; min-width: 0; border-radius: 10px; border: 1px solid var(--b-line); background: var(--b-surface);
+  color: var(--b-ink); display: grid; place-items: center; align-content: center; gap: 3px; padding: 2px;
+  font: inherit; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; text-decoration: none;
+}
+.cal-day small { font-size: 11px; font-weight: 400; color: var(--b-muted); }
+.cal-day.blank { visibility: hidden; }
+.cal-day.off { background: transparent; color: var(--b-head-muted); border-style: dashed; cursor: default; opacity: 0.55; }
+.cal-day.today { outline: 2px solid var(--b-accent); outline-offset: -2px; }
+.cal-day:hover:not(.off) { border-color: var(--b-accent); }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--b-muted); }
+.dot.won { background: var(--b-logo-green); border-color: var(--b-logo-green); }
+.dot.gave_up { background: var(--b-logo-red); border-color: var(--b-logo-red); }
+.dot.playing { border-color: var(--b-logo-yellow); background: transparent; border-width: 2.5px; }
+.cal-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: center; color: var(--b-head-muted); font-size: 14px; }
+.cal-legend li { display: flex; align-items: center; gap: 6px; }
+.archive > .btn { justify-self: center; }
 
 .counts { margin: 0 0 0 auto; color: var(--b-head-muted); font-size: 15px; text-align: right; }
 .counts strong { color: var(--b-head); }
@@ -181,15 +230,6 @@ dialog form[method="dialog"] { margin-top: 16px; }
 fieldset { border: 1px solid var(--b-line); border-radius: 12px; margin: 0 0 12px; padding: 10px 14px; display: grid; gap: 6px; }
 legend { font-weight: 700; padding: 0 4px; }
 label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
-
-.previous-actions { margin-bottom: 10px; }
-.previous { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; max-height: 55vh; overflow: auto; }
-.previous button {
-  width: 100%; display: flex; justify-content: space-between; gap: 10px; text-align: left;
-  border: 1px solid var(--b-line); background: var(--b-bg); color: var(--b-ink); border-radius: 10px; padding: 10px 12px; cursor: pointer;
-}
-.previous .status { color: var(--b-muted); }
-.previous .status.won { color: var(--b-ink); font-weight: 700; }
 
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; }
 .stats div { background: var(--b-bg); color: var(--b-head); border-radius: 12px; padding: 12px 4px; }

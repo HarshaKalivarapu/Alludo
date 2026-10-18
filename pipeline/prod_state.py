@@ -54,7 +54,13 @@ def pull(state_dir, names, where=REMOTE):
     """Copy state:<name> from KV into the state dir. Returns the names KV doesn't have."""
     missing = []
     for name in names:
-        out = wrangler("kv", "key", "get", f"state:{name}", "--binding", "GAMES", "--text", *where).strip()
+        try:
+            out = wrangler("kv", "key", "get", f"state:{name}", "--binding", "GAMES", "--text", *where).strip()
+        except RuntimeError as e:
+            # The remote API answers a key that was never written with a 404.
+            if "404" not in str(e):
+                raise
+            out = ""
         if not out or out == "Value not found":
             missing.append(name)
             continue

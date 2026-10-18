@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=Unbounded:wght@700&display=swap">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/style.css">
   <script>
     // Apply the saved theme before first paint so the page never flashes.
     try {
@@ -25,26 +25,55 @@
   <div class="overlay" id="overlay"></div>
   <div class="app">
     <header class="top">
-      <h1 class="logo" aria-label="Alludo">
-        <span class="logo-word" aria-hidden="true">ALLUD<span class="logo-rip" id="logo-rip">O</span></span>
-        <span class="logo-bar" aria-hidden="true"><i></i><i></i><i></i></span>
+      <h1 class="logo">
+        <a href="/" data-link aria-label="Alludo home">
+          <span class="logo-word" aria-hidden="true">ALLUD<span class="logo-rip" id="logo-rip">O</span></span>
+          <span class="logo-bar" aria-hidden="true"><i></i><i></i><i></i></span>
+        </a>
       </h1>
       <div class="menu-wrap">
         <button class="icon-btn" id="menu-btn" aria-haspopup="true" aria-expanded="false" aria-label="Menu">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
         </button>
         <div class="menu" id="menu" hidden>
+          <a href="/" data-link>Home</a>
+          <a href="/archive" data-link>Past games</a>
+          <button data-action="hint" class="play-only">Get a hint</button>
+          <button data-action="giveup" class="play-only">Give up</button>
+          <button data-action="closest" class="play-only">Closest words</button>
           <button data-action="how">How to play</button>
-          <button data-action="hint">Get a hint</button>
-          <button data-action="giveup">Give up</button>
-          <button data-action="closest">Closest words</button>
-          <button data-action="previous">Previous games</button>
           <button data-action="stats">Your stats</button>
           <button data-action="settings">Settings</button>
         </div>
       </div>
     </header>
 
+    <!-- Home: today's game, the past week, and the way to every past game. -->
+    <section class="view home" id="view-home" hidden>
+      <article class="today-card" id="today-card"></article>
+      <div class="week" id="week" aria-label="This week's games"></div>
+      <a class="btn wide" href="/archive" data-link>See all past games</a>
+      <p class="home-note">Progress is saved in this browser. No account needed.</p>
+    </section>
+
+    <!-- Archive: a month calendar of every game so far. -->
+    <section class="view archive" id="view-archive" hidden>
+      <div class="cal-head">
+        <button class="icon-btn" id="cal-prev" aria-label="Previous month">‹</button>
+        <h2 id="cal-title"></h2>
+        <button class="icon-btn" id="cal-next" aria-label="Next month">›</button>
+      </div>
+      <div class="cal-grid" id="cal-grid" role="grid"></div>
+      <ul class="cal-legend">
+        <li><i class="dot won"></i>Solved</li>
+        <li><i class="dot gave_up"></i>Gave up</li>
+        <li><i class="dot playing"></i>In progress</li>
+        <li><i class="dot"></i>Not played</li>
+      </ul>
+      <button class="btn" id="random-game">Play a random past game</button>
+    </section>
+
+    <section class="view play" id="view-play" hidden>
     <div class="meta-row">
       <p class="game-line" id="game-line">Loading…</p>
       <p class="counts" id="counts"></p>
@@ -71,6 +100,7 @@
 
     <div class="divider" aria-hidden="true"></div>
     <ol class="guesses" id="guesses"></ol>
+    </section>
   </div>
   </div>
 
@@ -116,13 +146,6 @@
     <form method="dialog"><button class="btn">Close</button></form>
   </dialog>
 
-  <dialog id="dlg-previous">
-    <h2>Previous games</h2>
-    <div class="previous-actions"><button class="btn" id="random-game">Play a random past game</button></div>
-    <ol class="previous" id="previous-list"></ol>
-    <form method="dialog"><button class="btn">Close</button></form>
-  </dialog>
-
   <dialog id="dlg-stats">
     <h2>Your stats</h2>
     <div class="stats" id="stats"></div>
@@ -152,6 +175,6 @@
     <form method="dialog"><button class="btn primary">Done</button></form>
   </dialog>
 
-  <script src="app.js" type="module"></script>
+  <script src="/app.js" type="module"></script>
 </body>
 </html>

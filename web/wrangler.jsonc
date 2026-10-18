@@ -8,7 +8,7 @@
   "kv_namespaces": [{ "binding": "GAMES", "id": "c53109b25c7f4167a3f1990ca7a67774" }],
   "vars": {
     // Game 1 is played on this date; one new game per day after it.
-    "LAUNCH_DATE": "2026-10-16",
+    "LAUNCH_DATE": "2026-10-19",
     "TIME_ZONE": "America/New_York"
   }
 }

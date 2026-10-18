@@ -123,6 +123,17 @@ bar, with two soft arcs rising from the final O (drawn by app.js on the glyph's 
 arcs pulse once each time the board changes color. Options page:
 https://claude.ai/artifact/17umdknpCtwETt1uoW5HUg
 
+## Launch
+
+- Game 1 = Monday 2026-10-19 (LAUNCH_DATE in web/wrangler.jsonc). First 91-day batch scheduled
+  (games 1-91, through 2027-01-17) and stored in KV `state:schedule`/`state:used`.
+- Continents stay valid guesses and are in the answer pool (europe, africa, asia, oceania).
+- The owner wants no swear or sexual words at all: everything formerly "hidden" is now blocked
+  (178 blocked words; hidden.txt is empty on purpose).
+- Site pages: `/` home (today's card, stats), `/play` and `/play/<n>`, `/archive` (month calendar
+  with solved / gave up / in progress / not played). Progress is per browser (localStorage).
+- Local testing with past games: `npx wrangler pages dev --port 8788 --binding LAUNCH_DATE=2026-10-16`.
+
 ## Status (2026-10-18)
 
 - Vocabulary 40,764 (764 places added by `pipeline/add_places.py`); 22 blocked words (API
