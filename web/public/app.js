@@ -610,10 +610,11 @@ function renderHome() {
   updateCountdown();
 }
 
-// The past seven days as small tiles, ending today.
+// This calendar week as small tiles, Sunday to Saturday. Days still to come are greyed out.
 function renderWeek() {
+  const sunday = today.game - new Date(today.date + "T00:00:00Z").getUTCDay();
   const tiles = [];
-  for (let n = today.game - 6; n <= today.game; n++) tiles.push(dayTile(n, dateOfGame(n), "weekday"));
+  for (let n = sunday; n < sunday + 7; n++) tiles.push(dayTile(n, dateOfGame(n), "weekday"));
   $("week").innerHTML = tiles.join("");
 }
 

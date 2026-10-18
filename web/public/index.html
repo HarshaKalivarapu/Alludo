@@ -51,9 +51,9 @@
     <!-- Home: today's game, the past week, and the way to every past game. -->
     <section class="view home" id="view-home" hidden>
       <article class="today-card" id="today-card"></article>
+      <div class="rule" aria-hidden="true"></div>
       <div class="week" id="week" aria-label="This week's games"></div>
-      <a class="btn wide" href="/archive" data-link>See all past games</a>
-      <p class="home-note">Progress is saved in this browser. No account needed.</p>
+      <a class="text-link" href="/archive" data-link>See all past games <span aria-hidden="true">→</span></a>
     </section>
 
     <!-- Archive: a month calendar of every game so far. -->
@@ -72,6 +72,7 @@
         <li><i class="dot"></i>Not played</li>
       </ul>
       <button class="btn" id="random-game">Play a random past game</button>
+      <p class="home-note">Progress is saved in this browser. No account needed.</p>
     </section>
 
     <section class="view play" id="view-play" hidden>

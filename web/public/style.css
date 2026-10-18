@@ -102,19 +102,24 @@ body:not([data-view="play"]) .menu .play-only { display: none; }
 
 .view { display: grid; gap: 12px; }
 
-/* Home: one compact card for today, a week strip, and a button to the calendar. */
-.home { gap: 16px; padding-top: 12px; }
-.today-card {
-  background: var(--b-surface); color: var(--b-ink); border: 1px solid var(--b-line); border-radius: 16px;
-  padding: 18px; display: grid; gap: 6px; justify-items: center; text-align: center;
-}
-.today-card .eyebrow { margin: 0; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--b-muted); }
-.today-card h2 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 24px; line-height: 1.15; }
-.today-card p { margin: 0; color: var(--b-muted); font-size: 15px; }
-.today-card .btn { margin-top: 6px; min-width: 160px; font-size: 18px; padding: 11px 22px; }
-.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+/* Home: today's game sits right on the board (no card), a thin rule, a light week strip,
+   and a plain link to the calendar. */
+.home { gap: 18px; padding-top: 16px; }
+.today-card { display: grid; gap: 6px; justify-items: center; text-align: center; color: var(--b-head); }
+.today-card .eyebrow { margin: 0; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--b-head-muted); }
+.today-card h2 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 26px; line-height: 1.15; }
+.today-card p { margin: 0; color: var(--b-head-muted); font-size: 15px; }
+.today-card .btn { margin-top: 8px; min-width: 150px; font-size: 17px; padding: 10px 24px; border-radius: 999px; }
+.today-card .countdown { font-size: 13px; margin-top: 10px; }
+.rule { height: 2px; border-radius: 1px; background: color-mix(in srgb, var(--b-line) 65%, var(--b-head-muted)); margin: 4px 0; }
+.rule + .week { margin-top: -8px; }
+.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.week .cal-day { aspect-ratio: auto; padding: 8px 2px; background: transparent; border-color: transparent; }
+.week .cal-day.today { background: var(--b-surface); }
+.week .cal-day.off { border: 0; }
 .week .cal-day small { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
-.btn.wide { justify-self: center; text-decoration: none; text-align: center; }
+.text-link { justify-self: center; color: var(--b-head); font-weight: 700; text-decoration: none; padding: 4px 2px; border-bottom: 1px solid var(--b-line); }
+.text-link:hover { border-bottom-color: var(--b-head); }
 .home-note { margin: 0; text-align: center; color: var(--b-head-muted); font-size: 13px; }
 
 /* Archive calendar */
@@ -126,14 +131,16 @@ body:not([data-view="play"]) .menu .play-only { display: none; }
 .cal-note { margin: 0; text-align: center; color: var(--b-head-muted); }
 .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .cal-dow { text-align: center; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--b-head-muted); padding-bottom: 2px; }
+/* Tiles are a soft wash of the card color rather than solid boxes, so the board shows through. */
 .cal-day {
-  aspect-ratio: 1; min-width: 0; border-radius: 10px; border: 1px solid var(--b-line); background: var(--b-surface);
+  aspect-ratio: 1; min-width: 0; border-radius: 10px; border: 1px solid transparent;
+  background: color-mix(in srgb, var(--b-surface) 55%, transparent);
   color: var(--b-ink); display: grid; place-items: center; align-content: center; gap: 3px; padding: 2px;
   font: inherit; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; text-decoration: none;
 }
 .cal-day small { font-size: 11px; font-weight: 400; color: var(--b-muted); }
 .cal-day.blank { visibility: hidden; }
-.cal-day.off { background: transparent; color: var(--b-head-muted); border-style: dashed; cursor: default; opacity: 0.55; }
+.cal-day.off { background: transparent; color: var(--b-head-muted); cursor: default; opacity: 0.5; }
 .cal-day.today { outline: 2px solid var(--b-accent); outline-offset: -2px; }
 .cal-day:hover:not(.off) { border-color: var(--b-accent); }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--b-muted); }
@@ -206,7 +213,7 @@ body:not([data-view="play"]) .menu .play-only { display: none; }
 
 .btn {
   border: 1px solid var(--b-line); background: var(--b-surface); color: var(--b-ink); border-radius: 10px;
-  padding: 10px 16px; cursor: pointer; font-weight: 700;
+  padding: 10px 16px; cursor: pointer; font-weight: 700; text-decoration: none; text-align: center;
 }
 .btn.primary { background: var(--b-accent); border-color: var(--b-accent); color: var(--b-accent-ink); }
 .btn.danger { background: var(--b-red); border-color: var(--b-red); color: var(--b-ink); }
