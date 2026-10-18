@@ -142,7 +142,9 @@ button { font: inherit; color: inherit; }
 .cal-head h2 { margin: 0; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: 24px; }
 .cal-head .icon-btn { font-size: 22px; line-height: 1; }
 .cal-head .icon-btn:disabled { opacity: 0.35; cursor: default; }
-.cal-note { margin: 0; text-align: center; color: var(--b-head-muted); }
+/* The month title sits a little lower under the logo, with the calendar tucked up beneath it. */
+.cal-head { margin-top: 12px; }
+.cal-head + .cal-grid { margin-top: -6px; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .cal-dow { text-align: center; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--b-head-muted); padding-bottom: 2px; }
 /* Tiles are a soft wash of the card color rather than solid boxes, so the board shows through. */

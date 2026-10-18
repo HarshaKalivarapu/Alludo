@@ -54,13 +54,17 @@ At about 4 requests per word and 40 free requests a day (20 on gemini-3.8-flash,
 gemini-3.6-flash), the job finishes about 10 words a day, so a 91-day batch takes ~10 days.
 Launch once a week or so is ready (see "Checking progress").
 
-**Next batches**: the status lines warn once fewer than 35 scheduled days are left. Then run
-```
-.venv/Scripts/python pipeline/schedule.py --remote-state
-```
-It continues the day after the last scheduled game. If it says a tier ran out, the pool needs
-more words in that tier (the 1,044-word pool covers about 7 batches before the 18-month rule
-starts recycling; `hard` and `medium-hard` run out first).
+**Next batches are automatic.** Every daily run first does
+`schedule.py --remote-state --if-fewer-than 35`: once fewer than 35 scheduled days are left, it
+schedules the next 91-day batch from the pool kept in KV (`state:pool`), continuing the day after
+the last scheduled game. To schedule by hand instead, run the same command locally without
+`--if-fewer-than`. A local `data/answers/pool.json` is the master copy: after editing it, run any
+`schedule.py --remote-state` locally (or push `state:pool`) so the daily job sees the change. If a
+run says a tier ran out, the pool needs more words in that tier (the 1,048-word pool covers about
+7 batches before the 18-month rule starts recycling; `hard` and `medium-hard` run out first).
+
+**Unfinished setup**: if a secret or the `embeddings-v1` release is missing, both workflows stop
+cleanly and list what's missing on the run page instead of failing.
 
 ## What the daily job does
 

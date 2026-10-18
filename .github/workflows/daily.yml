@@ -1,5 +1,6 @@
-# Daily production run: LLM-score upcoming games within the free Gemini quota, then upload
-# answer keys (and embeddings-only fallbacks for unfinished games due soon) to KV.
+# Daily production run: schedule the next batch when the current one is running out, LLM-score
+# upcoming games within the free Gemini quota, then upload answer keys (and embeddings-only
+# fallbacks for unfinished games due soon) to KV.
 # See docs/OPERATIONS.md. The repo is private (2,000 free Actions minutes/month), so the job
 # stays lean: no torch (embedding caches come prebuilt from a release) and a hard timeout.
 name: Daily puzzles
@@ -33,14 +34,47 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Setup isn't finished (a secret or the embeddings release is missing): explain it on the
+      # run page and stop cleanly instead of failing with a cryptic error. Puzzles already in KV
+      # keep being served either way.
+      - name: Check setup
+        id: setup
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HAS_GEMINI: ${{ secrets.GEMINI_API_KEY != '' }}
+          HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+          HAS_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: |
+          missing=()
+          [ "$HAS_GEMINI" = "true" ] || missing+=("secret GEMINI_API_KEY")
+          [ "$HAS_TOKEN" = "true" ] || missing+=("secret CLOUDFLARE_API_TOKEN")
+          [ "$HAS_ACCOUNT" = "true" ] || missing+=("secret CLOUDFLARE_ACCOUNT_ID")
+          gh release view "$EMBEDDINGS_TAG" > /dev/null 2>&1 || missing+=("release $EMBEDDINGS_TAG with emb.zip")
+          if [ ${#missing[@]} -eq 0 ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Skipped: setup isn't finished"
+              echo "Still needed (see docs/OPERATIONS.md, One-time setup):"
+              for m in "${missing[@]}"; do echo "- $m"; done
+              echo
+              echo "Nothing is broken: puzzles already uploaded keep working."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice::Skipped: still needed: ${missing[*]}"
+          fi
+
       - uses: actions/setup-python@v5
+        if: steps.setup.outputs.ready == 'true'
         with:
           python-version: "3.12"
 
       - name: Python packages
+        if: steps.setup.outputs.ready == 'true'
         run: pip install --quiet numpy wordfreq lemminflect requests
 
       - name: Embedding caches
+        if: steps.setup.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -52,6 +86,7 @@ jobs:
       # Intermediate LLM files (brainstorms, chunk scores) so a word started yesterday resumes.
       # Finished keys live in KV, so losing this cache only costs a few requests.
       - name: Restore LLM work
+        if: steps.setup.outputs.ready == 'true'
         uses: actions/cache/restore@v4
         with:
           path: data/llm/prod
@@ -59,18 +94,32 @@ jobs:
           restore-keys: llm-prod-
 
       - run: mkdir -p data/llm/prod
+        if: steps.setup.outputs.ready == 'true'
 
       - uses: actions/setup-node@v4
+        if: steps.setup.outputs.ready == 'true'
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
 
       - name: Wrangler
+        if: steps.setup.outputs.ready == 'true'
         working-directory: web
         run: npm ci --no-audit --no-fund
 
+      # Schedules the next 91-day batch on its own once fewer than 35 days are left, so nobody has
+      # to remember to. Prints counts only, never words.
+      - name: Next batch if needed
+        if: steps.setup.outputs.ready == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PYTHONUNBUFFERED: "1"
+        run: python pipeline/schedule.py --remote-state --if-fewer-than 35
+
       - name: Produce and upload
+        if: steps.setup.outputs.ready == 'true'
         timeout-minutes: 50
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -83,7 +132,7 @@ jobs:
 
       # Saved even when the run fails or times out, so finished requests are never repeated.
       - name: Save LLM work
-        if: always()
+        if: always() && steps.setup.outputs.ready == 'true'
         uses: actions/cache/save@v4
         with:
           path: data/llm/prod

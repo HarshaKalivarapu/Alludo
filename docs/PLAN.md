@@ -134,6 +134,20 @@ https://claude.ai/artifact/17umdknpCtwETt1uoW5HUg
   with solved / gave up / in progress / not played). Progress is per browser (localStorage).
 - Local testing with past games: `npx wrangler pages dev --port 8788 --binding LAUNCH_DATE=2026-10-16`.
 
+## Launch-eve status (2026-10-18, evening)
+
+- Live at https://alludo.pages.dev (deployed by GitHub Actions on push; secrets are set).
+- Games #1-#3 have LLM answer keys in KV; #4 is half done. The daily job continues from
+  2026-10-19 09:15 UTC once the `embeddings-v1` release exists.
+- UI done: Chalkboard stages, big-guess moment, softer single wave, last-guess spot, logo with
+  pulsing ripple, home page (today + Sunday-first week strip + dividers), calendar archive,
+  back arrow, page-specific menu with Lucide icons, closest words only after a game ends.
+- Model decision final: 3.8 + 3.6 Flash. Gemma matched quality but was too slow and crashed.
+- Tab icon: chalk "A" (Unbounded Bold traced to a path) over the three-color bar; link preview
+  og.png with the full wordmark. Both built by `pipeline/brand_assets.py` (fonts in data/raw/fonts).
+- The daily job schedules the next batch itself when fewer than 35 days are left (pool in KV
+  `state:pool`), and both workflows skip cleanly when setup is missing.
+
 ## Status (2026-10-18)
 
 - Vocabulary 40,764 (764 places added by `pipeline/add_places.py`); 22 blocked words (API

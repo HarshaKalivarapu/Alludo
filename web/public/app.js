@@ -652,9 +652,6 @@ function renderArchive() {
   $("cal-title").textContent = new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-US", { timeZone: "UTC", month: "long", year: "numeric" });
   $("cal-prev").disabled = calMonth <= first;
   $("cal-next").disabled = calMonth >= last;
-  const note = $("cal-note");
-  note.hidden = today.game >= 1;
-  note.textContent = `Past games will show up here once the first one goes live on ${prettyDate(dateOfGame(1), true)}.`;
   $("random-game").hidden = today.game < 2;
   const cells = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => `<div class="cal-dow">${d}</div>`);
   const startDay = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();

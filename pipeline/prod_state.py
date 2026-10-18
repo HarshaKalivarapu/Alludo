@@ -10,6 +10,7 @@ import json
 import re
 import shutil
 import subprocess
+import time
 from datetime import date
 from pathlib import Path
 
@@ -17,7 +18,8 @@ ROOT = Path(__file__).resolve().parent.parent
 WEB = ROOT / "web"
 DEFAULT_STATE = ROOT / "data" / "answers"
 POOL = DEFAULT_STATE / "pool.json"
-STATE_FILES = {"schedule": "schedule.json", "used": "used.json", "manifest": "manifest.json"}
+# The pool is kept in KV too, so the daily job can schedule the next batch on its own.
+STATE_FILES = {"schedule": "schedule.json", "used": "used.json", "manifest": "manifest.json", "pool": "pool.json"}
 REMOTE = ["--remote"]
 
 
@@ -41,13 +43,19 @@ def write_json(path, data):
     path.write_text(json.dumps(data, indent=1), encoding="utf-8")
 
 
-def wrangler(*args):
+def wrangler(*args, tries=2):
     # shutil.which finds npx.cmd on Windows; output is captured so values never reach the log.
     npx = shutil.which("npx") or "npx"
-    result = subprocess.run([npx, "wrangler", *args], cwd=WEB, capture_output=True, text=True, encoding="utf-8")
-    if result.returncode != 0:
-        raise RuntimeError(f"wrangler {args[0]} {args[1] if len(args) > 1 else ''} failed:\n{result.stderr[-2000:]}")
-    return result.stdout
+    for attempt in range(tries):
+        result = subprocess.run([npx, "wrangler", *args], cwd=WEB, capture_output=True, text=True, encoding="utf-8")
+        if result.returncode == 0:
+            return result.stdout
+        # A missing key is an answer, not a hiccup; anything else (an expiring login, a network
+        # blip) gets one more try.
+        if "404" in result.stderr or attempt == tries - 1:
+            break
+        time.sleep(3)
+    raise RuntimeError(f"wrangler {args[0]} {args[1] if len(args) > 1 else ''} failed:\n{result.stderr[-2000:]}")
 
 
 def pull(state_dir, names, where=REMOTE):

@@ -9,9 +9,13 @@ previous batch.
 
 Usage: python pipeline/schedule.py [--start 2026-11-01] [--days 91] [--first-game 1]
                                    [--seed s] [--state-dir data/answers] [--remote-state] [--dry-run]
+                                   [--if-fewer-than 35]
   --start       defaults to the day after the last scheduled game, or LAUNCH_DATE if none
   --first-game  defaults to the game number the site gives --start (from LAUNCH_DATE)
-  --remote-state  pull schedule/used from KV first and push them back after (needs wrangler login)
+  --remote-state  pull schedule/used (and the pool, if there's no local copy) from KV first and
+                  push them back after (needs wrangler login, or CLOUDFLARE_API_TOKEN in CI)
+  --if-fewer-than N  do nothing unless fewer than N scheduled days are left from today; the daily
+                  job runs this so the next batch is scheduled without anyone remembering to
 Reads  data/answers/pool.json, <state-dir>/schedule.json and used.json if present
 Writes <state-dir>/schedule.json  [{game, date, word, tier}, ...] in game order
        <state-dir>/used.json      {word: [dates used]}
@@ -21,8 +25,9 @@ import argparse
 import random
 import sys
 from collections import Counter
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import prod_state
 from prod_state import DEFAULT_STATE, POOL, game_number, read_json, site_config, write_json
@@ -82,11 +87,15 @@ def main():
     parser.add_argument("--pool", type=Path, default=POOL)
     parser.add_argument("--remote-state", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--if-fewer-than", type=int)
     args = parser.parse_args()
 
     if args.remote_state:
-        missing = prod_state.pull(args.state_dir, ["schedule", "used"])
-        print(f"pulled state from KV ({'none yet: ' + ', '.join(missing) if missing else 'schedule, used'})")
+        # A local pool is the master copy (it's curated here); only fetch it where there's none,
+        # as on a fresh GitHub Actions runner.
+        names = ["schedule", "used"] + ([] if args.pool.exists() else ["pool"])
+        missing = prod_state.pull(args.state_dir, names)
+        print(f"pulled state from KV ({'none yet: ' + ', '.join(missing) if missing else ', '.join(names)})")
     pool = read_json(args.pool, None)
     if pool is None:
         sys.exit(f"answer pool not found: {args.pool}")
@@ -96,8 +105,15 @@ def main():
         if entry["date"] not in used.setdefault(entry["word"], []):
             used[entry["word"]].append(entry["date"])
 
-    launch, _ = site_config()
+    launch, tz = site_config()
     last = max(schedule, key=lambda e: e["game"]) if schedule else None
+    if args.if_fewer_than is not None and last:
+        today = datetime.now(ZoneInfo(tz)).date()
+        left = (date.fromisoformat(last["date"]) - today).days + 1
+        if left >= args.if_fewer_than:
+            print(f"{left} scheduled days left (through game {last['game']}); no new batch needed yet")
+            return
+        print(f"only {left} scheduled days left: scheduling the next batch")
     start = args.start or (date.fromisoformat(last["date"]) + timedelta(days=1) if last else launch)
     first = args.first_game or (last["game"] + 1 if last and not args.start else game_number(start, launch))
     if first != game_number(start, launch):
@@ -153,7 +169,10 @@ def main():
     print(f"wrote {args.state_dir / 'schedule.json'} ({len(schedule)} games) and used.json")
     if args.remote_state:
         prod_state.push(args.state_dir, ["schedule", "used"])
-        print("pushed schedule and used to KV")
+        # Keep KV's copy of the pool current so the daily job schedules from the same words.
+        if args.pool.resolve() == (args.state_dir / "pool.json").resolve():
+            prod_state.push(args.state_dir, ["pool"])
+        print("pushed schedule, used and pool to KV")
 
 
 if __name__ == "__main__":
