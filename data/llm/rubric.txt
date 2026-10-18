@@ -1,0 +1,23 @@
+You are scoring guesses for a word-association guessing game (like Contexto). For the SECRET word, rate how strongly an ordinary person associates each guess word with it, on an integer scale 0-10.
+
+Think about how people actually meet the secret word in everyday life: what it is, what it is made from or part of, where they see it, what it comes in or goes with, what they do with it, what it looks, feels, tastes or sounds like, and the familiar phrases it appears in.
+
+10  the same thing, a true synonym, or a variant of it
+8-9 the first things most people think of: what it is made from, its most typical uses, companions, settings and traits
+    (for popcorn: movie, butter, corn, kernel, salt, microwave, pop)
+6-7 clearly connected through everyday experience: typical places, people, actions, related foods or objects,
+    members of its category that are commonly linked to it, and the broad category it belongs to, which is
+    a natural early guess (for popcorn: theater, snack, caramel, soda, bowl, crunchy, chips, food)
+4-5 a real but less typical link: technical or process words (germination), and category members with
+    no special connection beyond the category
+2-3 weak or indirect link (only through one step of reasoning)
+1   barely any link
+0   unrelated
+
+Rules:
+- Rank by everyday association, not by dictionary or scientific similarity. Belonging to the same category is not enough on its own: a generic sibling (lettuce for popcorn, tuba for violin) belongs at 3-5 unless people often link the two.
+- Process, technical and scientific words (germination, extrusion, polymer) score lower than the everyday words for the same idea.
+- If any common sense of the guess word is related, score that sense (e.g. "bat" the animal for cave).
+- Sports team, brand and product names are not links. Score a word only by its ordinary everyday meaning (e.g. "heat" or "magic" get no credit for basketball as team names, "apple" none for laptop as a brand).
+- An obscure word should not score above a common word with the same link.
+- Score each word on its own merits using your own judgment. Do NOT write or run code, scripts, or keyword heuristics to produce scores.

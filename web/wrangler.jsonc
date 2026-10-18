@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "alludo",
+  "compatibility_date": "2026-01-01",
+  // Cloudflare Pages: public/ is the site, functions/ holds the /api routes.
+  "pages_build_output_dir": "./public",
+  // Answer keys: "rank:<game>" -> uint16 rank per vocabulary word.
+  "kv_namespaces": [{ "binding": "GAMES", "id": "c53109b25c7f4167a3f1990ca7a67774" }],
+  "vars": {
+    // Game 1 is played on this date; one new game per day after it.
+    "LAUNCH_DATE": "2026-10-16",
+    "TIME_ZONE": "America/New_York"
+  }
+}

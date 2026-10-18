@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Alludo</title>
+  <meta name="description" content="Find the secret word. Every guess tells you how close you are.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2326352e'/><text x='16' y='23' font-size='20' font-family='Arial' font-weight='700' text-anchor='middle' fill='%23f1f0e6'>a</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=Unbounded:wght@700&display=swap">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    // Apply the saved theme before first paint so the page never flashes.
+    try {
+      const theme = JSON.parse(localStorage.getItem("alludo:settings") || "{}").theme;
+      if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+    } catch {}
+  </script>
+</head>
+<body>
+  <!-- The stage is the whole board. Its color follows how close the player is; the overlay
+       carries the next color while the wave reveals it. -->
+  <div class="stage" id="stage">
+  <div class="overlay" id="overlay"></div>
+  <div class="app">
+    <header class="top">
+      <h1 class="logo" aria-label="Alludo">
+        <span class="logo-word" aria-hidden="true">ALLUD<span class="logo-rip" id="logo-rip">O</span></span>
+        <span class="logo-bar" aria-hidden="true"><i></i><i></i><i></i></span>
+      </h1>
+      <div class="menu-wrap">
+        <button class="icon-btn" id="menu-btn" aria-haspopup="true" aria-expanded="false" aria-label="Menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+        </button>
+        <div class="menu" id="menu" hidden>
+          <button data-action="how">How to play</button>
+          <button data-action="hint">Get a hint</button>
+          <button data-action="giveup">Give up</button>
+          <button data-action="closest">Closest words</button>
+          <button data-action="previous">Previous games</button>
+          <button data-action="stats">Your stats</button>
+          <button data-action="settings">Settings</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="meta-row">
+      <p class="game-line" id="game-line">Loading…</p>
+      <p class="counts" id="counts"></p>
+    </div>
+
+    <form class="guess-form" id="guess-form" autocomplete="off">
+      <input id="guess-input" name="guess" type="text" placeholder="type a word" aria-label="Your guess"
+             autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go">
+    </form>
+
+    <!-- The last-guess spot: the newest guess, or a short message like an unknown word. -->
+    <div class="recent" id="recent" aria-live="polite"></div>
+
+    <section class="finish" id="finish" hidden>
+      <h2 id="finish-title"></h2>
+      <p id="finish-text"></p>
+      <div class="finish-actions">
+        <button class="btn primary" id="share-btn">Share result</button>
+        <button class="btn" data-action="closest">See the closest words</button>
+      </div>
+      <p class="share-note" id="share-note" aria-live="polite"></p>
+      <p class="next-game" id="next-game"></p>
+    </section>
+
+    <div class="divider" aria-hidden="true"></div>
+    <ol class="guesses" id="guesses"></ol>
+  </div>
+  </div>
+
+  <!-- Displacement filter for the wave: a moving height map bends the board slightly.
+       The grey flood keeps everything outside the wave perfectly still. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <filter id="warp" x="0" y="0" width="1" height="1" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-color="rgb(128,128,128)" result="flat"/>
+      <feImage id="warp-map" preserveAspectRatio="none" result="wave"/>
+      <feMerge result="map"><feMergeNode in="flat"/><feMergeNode in="wave"/></feMerge>
+      <feDisplacementMap id="warp-disp" in="SourceGraphic" in2="map" scale="0" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+
+  <dialog id="dlg-how">
+    <h2>How to play</h2>
+    <p>Find the secret word. You have unlimited guesses.</p>
+    <p>Every guess gets a number: its place in a list of about 40,000 words, sorted by how closely each one connects to the secret word. The secret word is <strong>#1</strong>.</p>
+    <ul class="legend">
+      <li><span class="swatch green"></span><strong>1–300</strong> very warm</li>
+      <li><span class="swatch yellow"></span><strong>301–1,500</strong> warm</li>
+      <li><span class="swatch red"></span><strong>1,501+</strong> cold</li>
+    </ul>
+    <p>"Close" means connected the way people think: things found together, parts, places, people, and other meanings count, not just synonyms. Plurals and verb forms count as their base word, so "skates" is "skate".</p>
+    <p>The board changes color as your best guess reaches each zone: brick when you're cold, amber when you're warm, green chalkboard when you're close. It never goes back.</p>
+    <p>A new word arrives every day at midnight Eastern time.</p>
+    <form method="dialog"><button class="btn primary">Start playing</button></form>
+  </dialog>
+
+  <dialog id="dlg-giveup">
+    <h2>Give up?</h2>
+    <p>You'll see the secret word and the game ends. You can still guess afterward, but it won't count.</p>
+    <div class="dialog-actions">
+      <form method="dialog"><button class="btn">Keep playing</button></form>
+      <button class="btn danger" id="giveup-confirm">Give up</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-closest">
+    <h2>The 500 closest words</h2>
+    <p class="dim" id="closest-note"></p>
+    <ol class="guesses compact" id="closest-list"></ol>
+    <form method="dialog"><button class="btn">Close</button></form>
+  </dialog>
+
+  <dialog id="dlg-previous">
+    <h2>Previous games</h2>
+    <div class="previous-actions"><button class="btn" id="random-game">Play a random past game</button></div>
+    <ol class="previous" id="previous-list"></ol>
+    <form method="dialog"><button class="btn">Close</button></form>
+  </dialog>
+
+  <dialog id="dlg-stats">
+    <h2>Your stats</h2>
+    <div class="stats" id="stats"></div>
+    <p class="dim">Stats are saved in this browser only.</p>
+    <form method="dialog"><button class="btn">Close</button></form>
+  </dialog>
+
+  <dialog id="dlg-settings">
+    <h2>Settings</h2>
+    <fieldset>
+      <legend>Hints</legend>
+      <label><input type="radio" name="hints" value="easy"> Easy: halfway to your best guess</label>
+      <label><input type="radio" name="hints" value="medium"> Medium: one step better than your best</label>
+      <label><input type="radio" name="hints" value="hard"> Hard: a random word in the top 300</label>
+    </fieldset>
+    <fieldset>
+      <legend>Sort guesses by</legend>
+      <label><input type="radio" name="sort" value="rank"> Closeness</label>
+      <label><input type="radio" name="sort" value="order"> Guess order</label>
+    </fieldset>
+    <fieldset>
+      <legend>Theme</legend>
+      <label><input type="radio" name="theme" value="system"> Match my device</label>
+      <label><input type="radio" name="theme" value="light"> Light</label>
+      <label><input type="radio" name="theme" value="dark"> Dark</label>
+    </fieldset>
+    <form method="dialog"><button class="btn primary">Done</button></form>
+  </dialog>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>

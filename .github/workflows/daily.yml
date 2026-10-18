@@ -1,0 +1,90 @@
+# Daily production run: LLM-score upcoming games within the free Gemini quota, then upload
+# answer keys (and embeddings-only fallbacks for unfinished games due soon) to KV.
+# See docs/OPERATIONS.md. The repo is private (2,000 free Actions minutes/month), so the job
+# stays lean: no torch (embedding caches come prebuilt from a release) and a hard timeout.
+name: Daily puzzles
+
+on:
+  schedule:
+    # Just after the Gemini free quota resets at midnight Pacific (07:00 UTC in summer, 08:00 in winter).
+    - cron: "15 9 * * *"
+  workflow_dispatch:
+    inputs:
+      max_requests:
+        description: "LLM request cap for this run (0 = only build and upload keys)"
+        default: "40"
+
+# Never two runs at once: they would share the quota and race on the KV state.
+concurrency:
+  group: daily-puzzles
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Bump when data/vocab.json or the embeddings change (new release with a fresh emb.zip).
+  EMBEDDINGS_TAG: embeddings-v1
+
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Python packages
+        run: pip install --quiet numpy wordfreq lemminflect requests
+
+      - name: Embedding caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$EMBEDDINGS_TAG" --pattern emb.zip --dir "$RUNNER_TEMP"
+          mkdir -p data/emb
+          unzip -o -j -q "$RUNNER_TEMP/emb.zip" -d data/emb
+          ls -l data/emb
+
+      # Intermediate LLM files (brainstorms, chunk scores) so a word started yesterday resumes.
+      # Finished keys live in KV, so losing this cache only costs a few requests.
+      - name: Restore LLM work
+        uses: actions/cache/restore@v4
+        with:
+          path: data/llm/prod
+          key: llm-prod-${{ github.run_id }}
+          restore-keys: llm-prod-
+
+      - run: mkdir -p data/llm/prod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Wrangler
+        working-directory: web
+        run: npm ci --no-audit --no-fund
+
+      - name: Produce and upload
+        timeout-minutes: 50
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PYTHONUNBUFFERED: "1"
+        run: >-
+          python pipeline/produce.py --remote-state --upload
+          --max-requests "${{ inputs.max_requests || '40' }}" --max-minutes 40
+
+      # Saved even when the run fails or times out, so finished requests are never repeated.
+      - name: Save LLM work
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/llm/prod
+          key: llm-prod-${{ github.run_id }}

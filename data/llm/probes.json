@@ -1,0 +1,110 @@
+{
+ "classroom": {
+  "you": [
+   "teacher",
+   "school",
+   "student",
+   "desk",
+   "board",
+   "learning",
+   "pencil",
+   "math",
+   "recess",
+   "chalk"
+  ],
+  "claude": [
+   "desk",
+   "chalk",
+   "homework",
+   "exam",
+   "test",
+   "chair",
+   "bell",
+   "recess",
+   "pencil",
+   "quiz",
+   "blackboard",
+   "whiteboard",
+   "notebook",
+   "backpack",
+   "principal",
+   "grade",
+   "lesson",
+   "study",
+   "teacher",
+   "student"
+  ]
+ },
+ "hockey": {
+  "you": [
+   "sport",
+   "ice",
+   "puck",
+   "stick",
+   "skates",
+   "goal",
+   "team",
+   "winter",
+   "canada",
+   "penalty"
+  ],
+  "claude": [
+   "ice",
+   "puck",
+   "stick",
+   "skate",
+   "rink",
+   "goal",
+   "team",
+   "winter",
+   "canada",
+   "helmet",
+   "fight",
+   "tooth",
+   "olympics",
+   "game",
+   "sport",
+   "player",
+   "coach",
+   "referee",
+   "arena",
+   "cold"
+  ]
+ },
+ "raisin": {
+  "you": [
+   "grape",
+   "fruit",
+   "food",
+   "dried",
+   "snack",
+   "cookie",
+   "oatmeal",
+   "wrinkly",
+   "sun",
+   "box"
+  ],
+  "claude": [
+   "grape",
+   "fruit",
+   "dried",
+   "sweet",
+   "snack",
+   "cookie",
+   "bread",
+   "breakfast",
+   "cereal",
+   "fig",
+   "date",
+   "plum",
+   "prune",
+   "sun",
+   "vineyard",
+   "dessert",
+   "baking",
+   "kitchen",
+   "wrinkle",
+   "sugar"
+  ]
+ }
+}

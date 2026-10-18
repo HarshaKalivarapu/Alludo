@@ -1,0 +1,26 @@
+# Slurs and hate terms. These are never valid guesses: build_games.py lists them in
+# words.json and the API rejects them. Ambiguous words with a common innocent meaning
+# (chink in the armor, the dike spelling dyke) go in hidden.txt instead.
+# Source: LDNOOBW English list intersected with data/vocab.json, plus hand-added slurs.
+beaner
+dago
+darkie
+darky
+fag
+faggot
+gook
+honky
+hymie
+kaffir
+kike
+mongoloid
+nigga
+nigger
+polack
+redskin
+spic
+squaw
+wetback
+wog
+wop
+yid

@@ -1,0 +1,15 @@
+.env
+.venv/
+__pycache__/
+data/raw/
+data/emb/
+# Contexto's own lists, used only for local comparison; not ours to publish.
+data/contexto/
+data/compare/
+# Secret-word pool and schedule: spoilers, never committed.
+data/answers/
+# Production LLM work: folder names are the secret words.
+data/llm/prod/
+# Files to upload by hand as GitHub Release assets.
+release/
+*.log
