@@ -207,6 +207,12 @@ function render({ holdFinish = false } = {}) {
     }
   }
   els.input.placeholder = done ? "keep guessing (won't count)" : "type a word";
+  // The closest words give the answer away, so they only appear once the game is over; hints and
+  // giving up only make sense while it's still going.
+  const menuItem = (action) => els.menu.querySelector(`[data-action="${action}"]`);
+  menuItem("closest").hidden = !done;
+  menuItem("hint").hidden = done;
+  menuItem("giveup").hidden = done;
   updateCountdown();
 }
 
@@ -670,6 +676,8 @@ $("cal-next").onclick = () => { calMonth = shiftMonth(calMonth, 1); renderArchiv
 function showView(name) {
   document.body.dataset.view = name;
   for (const v of ["home", "play", "archive"]) $(`view-${v}`).hidden = v !== name;
+  // The back arrow and some menu items only belong on certain pages.
+  document.querySelectorAll("[data-show]").forEach((el) => (el.hidden = !el.dataset.show.split(" ").includes(name)));
 }
 function route() {
   const path = location.pathname.replace(/\/+$/, "") || "/";

@@ -81,30 +81,42 @@ button { font: inherit; color: inherit; }
 /* Date on the left, guess count on the right. */
 .meta-row { display: flex; justify-content: space-between; align-items: baseline; gap: 4px 12px; flex-wrap: wrap; }
 .game-line { margin: 0; color: var(--b-head-muted); font-size: 15px; }
-.menu-wrap { position: relative; grid-row: 1; }
+/* The menu's wrapper is a flex box so it is exactly as tall as its button, like the back arrow. */
+.menu-wrap { position: relative; grid-row: 1; display: flex; align-self: center; }
+.back-btn { align-self: center; }
+/* Header and calendar buttons: just the icon on the board, with a faint wash on hover. */
 .icon-btn {
-  width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--b-line);
-  background: var(--b-surface); color: var(--b-ink); display: grid; place-items: center; cursor: pointer;
+  width: 40px; height: 40px; border-radius: 12px; border: 0; padding: 0;
+  background: transparent; color: var(--b-head); display: grid; place-items: center; cursor: pointer;
 }
-.icon-btn svg { width: 20px; height: 20px; fill: currentColor; }
+.icon-btn:hover, .icon-btn[aria-expanded="true"] { background: color-mix(in srgb, var(--b-surface) 60%, transparent); }
+/* The menu's three dots are filled shapes; the Lucide line icons (.ico) style themselves. */
+.icon-btn svg:not(.ico) { width: 20px; height: 20px; fill: currentColor; }
 .menu {
   position: absolute; right: 0; top: 48px; z-index: 10; min-width: 200px;
   background: var(--b-surface); color: var(--b-ink); border: 1px solid var(--b-line); border-radius: 12px;
   padding: 6px; display: grid; box-shadow: 0 10px 30px rgb(0 0 0 / 0.25);
 }
 .menu button, .menu a {
+  display: flex; align-items: center; gap: 12px;
   text-align: left; background: none; border: 0; padding: 10px 12px; border-radius: 8px; cursor: pointer;
   color: inherit; text-decoration: none; font-size: 17px;
 }
 .menu button:hover, .menu button:focus-visible, .menu a:hover, .menu a:focus-visible { background: var(--b-bg); }
-/* Hints, giving up and the closest words only make sense inside a game. */
-body:not([data-view="play"]) .menu .play-only { display: none; }
+/* Line icons (Lucide). These properties inherit into each <use>d symbol. */
+.ico { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.menu .ico { color: var(--b-muted); }
+.back-btn { grid-column: 1; grid-row: 1; justify-self: start; color: var(--b-ink); text-decoration: none; }
+.back-btn .ico { width: 22px; height: 22px; }
+
+.play { padding-top: 10px; }
 
 .view { display: grid; gap: 12px; }
 
 /* Home: today's game sits right on the board (no card), a thin rule, a light week strip,
    and a plain link to the calendar. */
-.home { gap: 18px; padding-top: 16px; }
+.home { gap: 18px; padding-top: 14px; }
+.home > .rule:first-child + .today-card { margin-top: -8px; }
 .today-card { display: grid; gap: 6px; justify-items: center; text-align: center; color: var(--b-head); }
 .today-card .eyebrow { margin: 0; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--b-head-muted); }
 .today-card h2 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 26px; line-height: 1.15; }
@@ -113,13 +125,15 @@ body:not([data-view="play"]) .menu .play-only { display: none; }
 .today-card .countdown { font-size: 13px; margin-top: 10px; }
 .rule { height: 2px; border-radius: 1px; background: color-mix(in srgb, var(--b-line) 65%, var(--b-head-muted)); margin: 4px 0; }
 .rule + .week { margin-top: -8px; }
+.week + .text-link { margin-top: -8px; }
+.text-link + .rule { margin-top: -4px; }
 .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .week .cal-day { aspect-ratio: auto; padding: 8px 2px; background: transparent; border-color: transparent; }
 .week .cal-day.today { background: var(--b-surface); }
 .week .cal-day.off { border: 0; }
 .week .cal-day small { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
-.text-link { justify-self: center; color: var(--b-head); font-weight: 700; text-decoration: none; padding: 4px 2px; border-bottom: 1px solid var(--b-line); }
-.text-link:hover { border-bottom-color: var(--b-head); }
+.text-link { justify-self: center; color: var(--b-head); font-weight: 700; text-decoration: none; padding: 4px 2px; }
+.text-link:hover, .text-link:focus-visible { text-decoration: underline; text-underline-offset: 4px; }
 .home-note { margin: 0; text-align: center; color: var(--b-head-muted); font-size: 13px; }
 
 /* Archive calendar */
